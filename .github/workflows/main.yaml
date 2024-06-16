@@ -1,59 +1,60 @@
-name: Deploy to EC2
+name: Deploy Flask Application to Elastic Beanstalk
 
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:  # This allows manual triggering
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+    - name: Checkout code
+      uses: actions/checkout@v2
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.12.2'  # or your preferred Python version
 
-      - name: Launch EC2 instance
-        id: launch_ec2
-        run: |
-          INSTANCE_ID=$(aws ec2 run-instances \
-            --image-id ${{ secrets.EC2_AMI_ID }} \
-            --instance-type ${{ secrets.EC2_INSTANCE_TYPE }} \
-            --key-name ${{ secrets.EC2_KEY_PAIR_NAME }} \
-            --security-group-ids ${{ secrets.EC2_SECURITY_GROUP_ID }} \
-            --query 'Instances[0].InstanceId' \
-            --output text)
-          echo "INSTANCE_ID=$INSTANCE_ID" >> $GITHUB_ENV
-          
-      - name: Wait for EC2 instance to be in running state
-        run: |
-          aws ec2 wait instance-running --instance-ids ${{ env.INSTANCE_ID }}
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
 
-      - name: Get EC2 instance public IP
-        id: get_ip
-        run: |
-          INSTANCE_PUBLIC_IP=$(aws ec2 describe-instances \
-            --instance-ids ${{ env.INSTANCE_ID }} \
-            --query 'Reservations[0].Instances[0].PublicIpAddress' \
-            --output text)
-          echo "INSTANCE_PUBLIC_IP=$INSTANCE_PUBLIC_IP" >> $GITHUB_ENV
+    - name: Zip application
+      run: zip -r application.zip .
 
-      - name: Copy application files to EC2
-        run: |
-          scp -i ~/.ssh/${{ secrets.EC2_KEY_PAIR_NAME }}.pem -o StrictHostKeyChecking=no -r . ec2-user@${{ env.INSTANCE_PUBLIC_IP }}:/home/ec2-user/app
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Set up Flask application on EC2
-        run: |
-          ssh -i ~/.ssh/${{ secrets.EC2_KEY_PAIR_NAME }}.pem -o StrictHostKeyChecking=no ec2-user@${{ env.INSTANCE_PUBLIC_IP }} << 'EOF'
-          sudo yum update -y
-          sudo yum install -y python3 python3-pip
-          sudo pip3 install -r /home/ec2-user/app/requirements.txt
-          sudo nohup gunicorn --chdir /home/ec2-user/app app:app --bind 0.0.0.0:80 &
-          EOF
+    - name: Install Elastic Beanstalk CLI
+      run: pip install awsebcli
+
+    - name: Generate random EB application name
+      id: random_app_name
+      run: echo "::set-output name=name::engageendurance-$(date +%s)"
+
+    - name: Generate random EB environment name
+      id: random_env_name
+      run: echo "::set-output name=name::engageenv-$(date +%s)"
+
+    - name: Initialize Elastic Beanstalk application
+      run: |
+        eb init -p python-3.12 "${{ steps.random_app_name.outputs.name }}" --region ${{ secrets.AWS_REGION }}
+
+    - name: Create Elastic Beanstalk environment
+      run: |
+        eb create "${{ steps.random_env_name.outputs.name }}" --cname "${{ steps.random_env_name.outputs.name }}" --instance-types t2.micro --platform python-3.12
+
+    - name: Deploy to Elastic Beanstalk environment
+      run: |
+        eb deploy --label ${{ github.sha }} --quiet
+
+    - name: Display Elastic Beanstalk environment URL
+      run: |
+        EB_URL=$(eb status | grep CNAME | awk '{print $2}')
+        echo "Application deployed to: $EB_URL"
