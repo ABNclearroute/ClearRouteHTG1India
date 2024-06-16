@@ -33,10 +33,7 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ secrets.AWS_REGION }}
 
-    - name: Install Elastic Beanstalk CLI
-      run: pip install awsebcli
-
     - name: Deploy to Elastic Beanstalk
       run: |
-        eb init -p python-3.12 engageEndurance --region ${{ secrets.AWS_REGION }}
-        eb deploy engageEndurance_mvp --label ${{ github.sha }}
+        aws elasticbeanstalk create-application-version --application-name engageEndurance --version-label ${{ github.sha }} --source-bundle S3Bucket="${{ secrets.AWS_ELASTICBEANSTALK_BUCKET }}",S3Key="application.zip"
+        aws elasticbeanstalk update-environment --application-name engageEndurance --environment-name engageEndurance_mvp --version-label ${{ github.sha }}
