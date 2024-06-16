@@ -178,13 +178,13 @@ $(document).ready(function () {
     const video = document.getElementById('webcamVideo');
 
     // Use navigator.mediaDevices.getUserMedia to access the webcam
-    // navigator.mediaDevices.getUserMedia({
-    //     video: true
-    // }).then(stream => {
-    //     video.srcObject = stream;
-    // }).catch(error => {
-    //     console.error('Error accessing webcam:', error);
-    // });
+    navigator.mediaDevices.getUserMedia({
+        video: true
+    }).then(stream => {
+        video.srcObject = stream;
+    }).catch(error => {
+        console.error('Error accessing webcam:', error);
+    });
 
     // Static data array
    const staticDataArray = [
