@@ -44,11 +44,11 @@ jobs:
 
     - name: Initialize Elastic Beanstalk application
       run: |
-        eb init -p python-3.12 "${{ steps.random_app_name.outputs.name }}" --region ${{ secrets.AWS_REGION }}
+        eb init -p python-3.9 "${{ steps.random_app_name.outputs.name }}" --region ${{ secrets.AWS_REGION }}
 
     - name: Create Elastic Beanstalk environment
       run: |
-        eb create "${{ steps.random_env_name.outputs.name }}" --cname "${{ steps.random_env_name.outputs.name }}" --instance-types t2.micro --platform python-3.12
+        eb create "${{ steps.random_env_name.outputs.name }}" --cname "${{ steps.random_env_name.outputs.name }}" --instance-types t2.micro --platform python-3.9
 
     - name: Deploy to Elastic Beanstalk environment
       run: |
