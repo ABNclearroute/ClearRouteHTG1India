@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Endurance Tracker Dashboard</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            padding: 20px;
+            background-color: #f8f9fa;
+            font-family: 'Arial', sans-serif;
+        }
+        .card {
+            margin-bottom: 20px;
+            border: none;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            background-color: #fff;
+            transition: transform 0.3s ease-in-out;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        .chart-container {
+            width: 100%;
+            height: 300px;
+        }
+        .card-header {
+            background-color: #007bff;
+            color: #fff;
+            border-bottom: none;
+            padding: 10px 15px;
+            font-weight: bold;
+        }
+        .card-body {
+            position: relative;
+            padding: 20px;
+        }
+        .card-title {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+        }
+        .card-text {
+            font-size: 1.1rem;
+        }
+        .img-fluid {
+            max-width: 80px;
+            border-radius: 50%;
+        }
+        .animate__animated {
+            animation-duration: 1s;
+        }
+
+        .high-risk {
+            color: white;
+            background-color: red;
+            padding: 5px;
+            border-radius: 5px;
+        }
+        .medium-risk {
+            color: black;
+            background-color: yellow;
+            padding: 5px;
+            border-radius: 5px;
+        }
+        .low-risk {
+            color: white;
+            background-color: green;
+            padding: 5px;
+            border-radius: 5px;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <h1 class="text-center mb-5 animate__animated animate__bounceInDown">Engage Endurance Dashboard</h1>
+
+        <div class="row">
+            <div class="col-lg-4 mb-4 animate__animated animate__fadeInLeft">
+                <div class="card">
+                    <div class="card-header">
+                        Driver Profile
+                    </div>
+                    <div class="card-body">
+                        <div class="text-center mb-3 d-flex align-items-center">
+                            <img src="{{url_for('static', filename='driver.png')}}" class="img-fluid mb-3 profile-img" alt="Driver Profile Picture">
+                            <div class="ml-3 text-left">
+                                <h5 class="card-title mb-0">FILIPE ALBUQUERQUE</h5>
+                                <p class="card-text">Age: <span id="driverAge">30</span></p>
+                            </div>
+                        </div>
+                        
+                        <hr>
+                        <h6 class="card-title">Driver Metrics</h6>
+                        <p class="card-text">Driver ID: <span id="driverId">1</span></p>
+                        <p class="card-text">Heart Rate: <span id="heartRate"></span></p>
+                        <p class="card-text">Body Temperature: <span id="bodyTemperature"></span></p>
+                        <p class="card-text">Screen Time: <span id="screenTime"></span></p>
+                        <p class="card-text">Activity Level: <span id="activityLevel"></span></p>
+                        <p class="card-text">Self-Reported Fatigue: <span id="selfReportedFatigue"></span></p>
+                        <p class="card-text">Mood: <span id="mood"></span></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4 mb-4 animate__animated animate__fadeInUp">
+                <div class="card">
+                    <div class="card-header">
+                        Driver Cam
+                    </div>
+                    <div class="card-body">
+                        <div class="text-center mb-3">
+                            <video id="webcamVideo" autoplay playsinline style="width: 100%;"></video>
+                        </div>
+                       
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4 mb-4 animate__animated animate__fadeInRight">
+                <div class="card">
+                    <div class="card-header">
+                        Real-Time Metrics Chart
+                    </div>
+                    <div class="card-body">
+                        <canvas id="realTimeChart" class="chart-container"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-6 mb-4 animate__animated animate__fadeInLeft">
+                <div class="card">
+                    <div class="card-header">
+                        Fatigue Monitoring
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <!-- Left Column for Fatigue Level and Risk Score -->
+                            <div class="col-md-6">
+                                <h5 class="card-title">Fatigue Level</h5>
+                                <p class="card-text" id="fatigueLevel">-</p>
+                                <h5 class="card-title">Risk Score</h5>
+                                <p class="card-text" id="riskScore">-</p>
+                            </div>
+                            <!-- Right Column for Risk Message -->
+                            <div class="col-md-6 d-flex align-items-center justify-content-center">
+                                <div id="riskMessage" class="p-3  rounded text-center">Risk Message</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-6 mb-4 animate__animated animate__fadeInRight">
+                <div class="card">
+                    <div class="card-header">
+                        High-Risk Events in Last 1 Minute
+                    </div>
+                    <div class="card-body text-center">
+                        <h3 id="highRiskCount">0</h3>
+                        <p class="text-muted">High-Risk Events</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+    <script src="{{url_for('static', filename='script.js')}}"></script>
+</body>
+</html>

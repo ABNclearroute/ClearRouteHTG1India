@@ -7,7 +7,7 @@ import joblib
 data  = pd.read_csv("fatigue_data.csv")
 X = data.drop('fatigue_level', axis=1)
 y = data['fatigue_level']
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=1, random_state=20)
 
 
 model = RandomForestClassifier()

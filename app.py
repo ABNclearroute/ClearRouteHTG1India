@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 import joblib
@@ -11,7 +11,7 @@ model = joblib.load('cognitive_fatigue_model.pk')
 
 @app.route('/')
 def home():
-    return "Endurance Tracker Test"
+    return render_template('index.html')
 
 
 def calculate_risk_score(features):
