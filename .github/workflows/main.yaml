@@ -1,4 +1,4 @@
-name: Deploy Flask Application to Elastic Beanstalk
+name: Deploy Flask Application to Elastic Beanstalk - engageEndurance
 
 on:
   push:
