@@ -297,7 +297,7 @@ $(document).ready(function () {
     function fetchPrediction(data) {
         $.ajax({
             type: 'POST',
-            url: 'http://127.0.0.1:8080/predict',
+            url: 'http://18.207.123.225:8080//predict',
             contentType: 'application/json',
             data: JSON.stringify(data),
             success: function (response) {
