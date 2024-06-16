@@ -1,4 +1,4 @@
-name: Deploy to Elastic Beanstalk
+name: Deploy to EC2
 
 on:
   push:
@@ -20,17 +20,40 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Install AWS Elastic Beanstalk CLI
+      - name: Launch EC2 instance
+        id: launch_ec2
         run: |
-          sudo pip install awsebcli
+          INSTANCE_ID=$(aws ec2 run-instances \
+            --image-id ${{ secrets.EC2_AMI_ID }} \
+            --instance-type ${{ secrets.EC2_INSTANCE_TYPE }} \
+            --key-name ${{ secrets.EC2_KEY_PAIR_NAME }} \
+            --security-group-ids ${{ secrets.EC2_SECURITY_GROUP_ID }} \
+            --query 'Instances[0].InstanceId' \
+            --output text)
+          echo "INSTANCE_ID=$INSTANCE_ID" >> $GITHUB_ENV
+          
+      - name: Wait for EC2 instance to be in running state
+        run: |
+          aws ec2 wait instance-running --instance-ids ${{ env.INSTANCE_ID }}
 
-      - name: Initialize EB CLI
+      - name: Get EC2 instance public IP
+        id: get_ip
         run: |
-          eb init -p python-3.11 ${{
-            secrets.EB_APP_NAME
-          }} --region ${{ secrets.AWS_REGION }} \
-          && eb use ${{ secrets.EB_ENV_NAME }}
+          INSTANCE_PUBLIC_IP=$(aws ec2 describe-instances \
+            --instance-ids ${{ env.INSTANCE_ID }} \
+            --query 'Reservations[0].Instances[0].PublicIpAddress' \
+            --output text)
+          echo "INSTANCE_PUBLIC_IP=$INSTANCE_PUBLIC_IP" >> $GITHUB_ENV
 
-      - name: Deploy to Elastic Beanstalk
+      - name: Copy application files to EC2
         run: |
-          eb deploy
+          scp -i ~/.ssh/${{ secrets.EC2_KEY_PAIR_NAME }}.pem -o StrictHostKeyChecking=no -r . ec2-user@${{ env.INSTANCE_PUBLIC_IP }}:/home/ec2-user/app
+
+      - name: Set up Flask application on EC2
+        run: |
+          ssh -i ~/.ssh/${{ secrets.EC2_KEY_PAIR_NAME }}.pem -o StrictHostKeyChecking=no ec2-user@${{ env.INSTANCE_PUBLIC_IP }} << 'EOF'
+          sudo yum update -y
+          sudo yum install -y python3 python3-pip
+          sudo pip3 install -r /home/ec2-user/app/requirements.txt
+          sudo nohup gunicorn --chdir /home/ec2-user/app app:app --bind 0.0.0.0:80 &
+          EOF
