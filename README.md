@@ -11,7 +11,6 @@ Welcome to the Engage Endurance! This project aims to develop a comprehensive sy
 - [Requirements](#requirements)
 - [Installation](#installation)
 - [Contributing](#contributing)
-- [License](#license)
 - [Contact](#contact)
 - [Authors](#authors)
 ## Introduction
